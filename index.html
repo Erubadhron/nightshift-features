@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nightshift - Features and Fixes</title>
+<style>
+  :root{
+    --bg:#14110f;--panel:#1d1915;--panel2:#26211b;--line:#3a3128;
+    --text:#ece4d6;--muted:#a79a86;--accent:#e0a64a;--need:#e8793f;
+    --s-open:#e06a5a;--s-verify:#e8a13f;--s-in-progress:#e0c24a;--s-research:#6fa8dc;
+    --s-planned:#4fc3b0;--s-idea:#b29be0;--s-blocked:#d9534f;--s-parked:#8d8579;--s-pass:#9cc36c;--s-done:#6cc38a;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f6f1e8;--panel:#fffdf8;--panel2:#efe7d8;--line:#d9cdb8;
+      --text:#2a241c;--muted:#6f6552;--accent:#a8691a;--need:#b8501b;
+      --s-open:#b83e30;--s-verify:#a86a10;--s-in-progress:#8a7410;--s-research:#2c6aa0;
+      --s-planned:#17806f;--s-idea:#6a4fb0;--s-blocked:#a8302c;--s-parked:#6f6a60;--s-pass:#5a7f1e;--s-done:#2b8a4e;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f1e8;--panel:#fffdf8;--panel2:#efe7d8;--line:#d9cdb8;
+    --text:#2a241c;--muted:#6f6552;--accent:#a8691a;--need:#b8501b;
+    --s-open:#b83e30;--s-verify:#a86a10;--s-in-progress:#8a7410;--s-research:#2c6aa0;
+    --s-planned:#17806f;--s-idea:#6a4fb0;--s-blocked:#a8302c;--s-parked:#6f6a60;--s-pass:#5a7f1e;--s-done:#2b8a4e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI",system-ui,Arial,sans-serif}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:14px 16px 10px}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{margin:0;font:700 20px Georgia,"Times New Roman",serif;letter-spacing:.5px}
+  h1 small{display:block;font:600 12px "Segoe UI",system-ui,sans-serif;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+  .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:4px 12px;cursor:pointer;font:600 12px inherit;font-family:inherit}
+  .chip:hover{border-color:var(--accent)}
+  .chip.on{color:var(--text);border-color:var(--accent);background:var(--panel2)}
+  .chip .n{opacity:.7;margin-left:4px}
+  .chip.need.on,.chip.need:hover{border-color:var(--need)}
+  input[type=search]{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:4px 12px;font:13px inherit;font-family:inherit;outline:none;width:200px}
+  input[type=search]:focus{border-color:var(--accent)}
+  .sp{flex:1}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .layout{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;padding:14px 16px 60px}
+  aside{position:sticky;top:var(--hh,120px);align-self:start;max-height:calc(100vh - var(--hh,120px) - 10px);overflow:auto;padding-right:4px}
+  aside summary.navtitle{display:none}
+  .navlabel{font:700 11px "Segoe UI",system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:4px 0 6px}
+  .navtools{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+  .navtools input[type=search]{width:100%}
+  .sortlbl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .sortlbl select{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:3px 10px;font:13px inherit;font-family:inherit;outline:none}
+  .sortlbl select:focus{border-color:var(--accent)}
+  .when{font:600 11px "Segoe UI",system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+  .tree,.tree ul{list-style:none;margin:0;padding:0}
+  .tree ul{padding-left:14px;border-left:1px solid var(--line);margin-left:7px}
+  .tree button{display:flex;width:100%;gap:6px;align-items:baseline;text-align:left;background:none;border:0;border-radius:6px;color:var(--text);padding:3px 8px;cursor:pointer;font:14px inherit;font-family:inherit}
+  .tree button:hover{background:var(--panel)}
+  .tree button.on{background:var(--panel2);color:var(--accent);font-weight:600}
+  .tree button.top{font-weight:600}
+  .tree button .nm{flex:1;min-width:0}
+  .tree button .n{color:var(--muted);font-size:12px}
+  .tree button.dim{opacity:.45}
+  .tree .trow{display:flex;align-items:center;border-radius:6px}
+  .tree .trow:hover{background:var(--panel)}
+  .tree .trow button:hover{background:none}
+  .tree .trow:has(button.on){background:var(--panel2)}
+  .tree .tog{flex:none;width:24px;display:inline-block}
+  .tree button.tog{width:24px;padding:3px 0;justify-content:center;color:var(--muted);font-size:9px}
+  .tree button.tog span{display:inline-block;transition:transform .15s}
+  .tree button.tog:hover{color:var(--accent)}
+  .tree button.tog.open span{transform:rotate(90deg)}
+  #tree > li{padding:3px 0}
+  #tree > li + li{border-top:1px solid var(--line)}
+  #tree > li:first-child{padding-bottom:6px}
+  #tree > li:first-child + li{border-top-width:2px}
+  .tree ul li{margin-top:1px}
+  main{min-width:0}
+  .crumb{color:var(--muted);font-size:13px;margin:4px 0 2px}
+  .crumb a{color:var(--accent);cursor:pointer;text-decoration:none}
+  h2{font:700 13px "Segoe UI",system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);cursor:pointer}
+  h3{font:600 14px "Segoe UI",system-ui,sans-serif;color:var(--text);margin:14px 0 6px;cursor:pointer}
+  h2 .c,h3 .c{color:var(--muted);font-weight:600;letter-spacing:0;margin-left:6px;font-size:12px}
+  h2:hover,h3:hover{color:var(--accent)}
+  details.item{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
+  details.item[open]{border-color:var(--accent)}
+  details.item.flash{outline:2px solid var(--accent)}
+  details.item > summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:baseline;padding:8px 12px}
+  details.item > summary::-webkit-details-marker{display:none}
+  .caret{color:var(--muted);font-size:10px;width:10px;flex:none;transition:transform .15s}
+  details[open] .caret{transform:rotate(90deg);color:var(--accent)}
+  .id{font:700 12px Consolas,"Courier New",monospace;color:var(--muted);flex:none;width:44px}
+  .title{flex:1;min-width:0;font-weight:600}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+  .badge{font:700 10px "Segoe UI",system-ui,sans-serif;letter-spacing:.8px;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1px solid currentColor;white-space:nowrap}
+  .badge.pri{color:var(--muted)}
+  .badge.pri.high{color:var(--need)}
+  .badge.needs{color:var(--need)}
+  .badge.fix{color:var(--s-open)}
+  .pct{display:inline-flex;align-items:center;gap:5px;font:700 11px "Segoe UI",system-ui,sans-serif;color:var(--muted)}
+  .pct i{display:inline-block;width:44px;height:5px;border-radius:3px;background:var(--panel2);overflow:hidden}
+  .pct i b{display:block;height:100%;background:var(--s-pass)}
+  .detail{padding:2px 14px 14px 66px;color:var(--text)}
+  .detail p{margin:8px 0}
+  .detail ul{margin:6px 0 8px;padding-left:20px}
+  .detail li{margin:3px 0}
+  .detail code{font:13px Consolas,"Courier New",monospace;background:var(--panel2);padding:1px 5px;border-radius:4px}
+  .detail a{color:var(--accent)}
+  .meta{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;display:grid;grid-template-columns:90px 1fr;gap:4px 10px;font-size:13px}
+  .meta dt{color:var(--muted)}
+  .meta dd{margin:0;overflow-wrap:anywhere}
+  .meta dd.need{color:var(--need)}
+  .empty{color:var(--muted);text-align:center;padding:30px}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:0 16px 30px}
+  @media (max-width:800px){
+    .layout{grid-template-columns:1fr;gap:6px}
+    aside{position:static;max-height:none;overflow:visible}
+    aside details.nav{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+    aside summary.navtitle{display:block;cursor:pointer;font-weight:600}
+    .navlabel{display:none}
+    .detail{padding-left:14px}
+    details.item > summary{flex-wrap:wrap}
+    .badges{justify-content:flex-start;width:100%;padding-left:20px}
+    input[type=search]{width:100%}
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>NIGHTSHIFT<small>Features and fixes</small></h1>
+  <div style="font-size:12px;opacity:.65;margin:2px 0 6px">Last updated: 2026-10-22 13:42 GMT</div>
+  <div class="row" id="statusChips"></div>
+  <div class="row">
+    <button class="chip on" data-kind="all">All</button>
+    <button class="chip" data-kind="feature">Features</button>
+    <button class="chip" data-kind="fix">Needs fixing</button>
+    <button class="chip need" id="needBtn" title="Entries waiting on you: a clip, a test or a decision">Waiting on you<span class="n" id="needN"></span></button>
+    <button class="chip" id="hideDone" title="Hide entries that passed or are done">Hide passed</button>
+    <input type="search" id="q" placeholder="Search…">
+    <span class="sp"></span>
+    <button class="chip" id="expand">Expand all</button>
+  </div>
+</div></header>
+<div class="layout">
+  <aside><details class="nav" id="navBox" open><summary class="navtitle">Sections</summary>
+    <div class="navlabel">Sections</div>
+    <div class="navtools">
+      <input type="search" id="secQ" placeholder="Filter sections and entries…" title="Shows only sections whose name, or one of whose entries, matches">
+      <label class="sortlbl">Sort
+        <select id="sort">
+          <option value="section">By section</option>
+          <option value="recent">Most recent first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </label>
+    </div>
+    <ul class="tree" id="tree"></ul>
+  </details></aside>
+  <main id="list"></main>
+</div>
+<footer id="foot"></footer>
+<script>
+const DATA = {"updated": "2026-10-22 13:18 GMT", "statuses": ["in progress", "open", "verify", "research", "planned", "idea", "blocked", "parked", "pass", "done"], "items": [{"id": "F-046", "kind": "feature", "title": "Splitscreen 1-4 players + join in game", "status": "pass", "priority": "", "section": ["Current build", "Built so far"], "progress": "", "file": "PLANS\\PROGRESS.md", "needs": "", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Pad A/Start or Enter joins. F4 fills empty screens with bots. Join screen and pad unplug handling still to do (Milestone 2)."}]}, {"id": "X-002", "kind": "fix", "title": "Not tested with real controllers yet", "status": "open", "priority": "", "section": ["Current build", "Built so far"], "progress": "", "file": "PLANS\\PROGRESS.md", "needs": "Test with 2+ pads, including the generic one", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Generic pads without an SDL mapping may have wrong buttons."}]}, {"id": "F-047", "kind": "feature", "title": "Damage, death and respawn", "status": "pass", "priority": "", "section": ["Current build", "Built so far"], "progress": "", "file": "PLANS\\PROGRESS.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "100 health, bullet headshots x2, rockets hurt you at half. Death screen names the killer; respawn after 3 s far from living players."}]}, {"id": "F-048", "kind": "feature", "title": "Health ring + armour vests", "status": "pass", "priority": "", "section": ["Current build", "Built so far"], "progress": "", "file": "PLANS\\PROGRESS.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Circle top right: orange health, blue armour outer ring. Armour soaks damage first."}]}, {"id": "F-049", "kind": "feature", "title": "Kestrel assault rifle", "status": "pass", "priority": "", "section": ["Current build", "Built so far"], "progress": "", "file": "PLANS\\PROGRESS.md", "needs": "", "related": "F-002", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Automatic, 30 rounds. Our own name for an AK-style rifle."}]}, {"id": "F-050", "kind": "feature", "title": "Health pickups", "status": "planned", "priority": "", "section": ["Current build", "Next up"], "progress": "", "file": "PLANS\\PLAN.md", "needs": "", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Milestone 4. Only armour pickups exist so far."}]}, {"id": "F-051", "kind": "feature", "title": "Aim assist", "status": "planned", "priority": "", "section": ["Current build", "Next up"], "progress": "", "file": "PLANS\\PLAN.md", "needs": "", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Milestone 3: slowdown and pull near targets, strength per player."}]}, {"id": "F-052", "kind": "feature", "title": "Deathmatch rules, scores, end screen", "status": "planned", "priority": "", "section": ["Current build", "Next up"], "progress": "", "file": "PLANS\\PLAN.md", "needs": "", "related": "F-010", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Milestone 6: kill limit 15, 10 min, spawn protection, scoreboard, play again."}]}, {"id": "F-053", "kind": "feature", "title": "Proper bots", "status": "planned", "priority": "", "section": ["Current build", "Next up"], "progress": "", "file": "PLANS\\PLAN.md", "needs": "", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Milestone 7: roam to pickups, chase and shoot, easy/medium/hard. The current bots only wander and fire at random."}]}, {"id": "F-054", "kind": "feature", "title": "Menus, settings, sound", "status": "planned", "priority": "", "section": ["Current build", "Next up"], "progress": "", "file": "PLANS\\PLAN.md", "needs": "", "related": "", "added": "2026-10-21", "edited": "2026-10-22 12:58", "body": [{"p": "Milestone 8: match setup, pause menu (sensitivity, invert-Y, aim assist), sound effects."}]}, {"id": "F-039", "kind": "feature", "title": "Fair for everyone (Joel)", "status": "idea", "priority": "", "section": ["Design rules"], "progress": "", "file": "PLANS\\The Boys\\Joel .txt", "needs": "Discuss the catch-up idea with the boys", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "The game should be accessible: anyone has a chance, and even an elite player can be killed."}, {"ul": ["Possible equaliser: players doing worse get a small health bonus."]}]}, {"id": "F-001", "kind": "feature", "title": "Slide", "status": "pass", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Works in game."}]}, {"id": "X-001", "kind": "fix", "title": "Slide could last longer / travel further", "status": "open", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-001", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Feedback from the boys after playing."}]}, {"id": "F-003", "kind": "feature", "title": "Tap jump = small, hold jump = big", "status": "done", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-004", "kind": "feature", "title": "Dark Souls style roll", "status": "done", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "On B / Circle, with dodge frames."}]}, {"id": "F-027", "kind": "feature", "title": "Wall running", "status": "idea", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-026", "kind": "feature", "title": "Ledge hang + pull people down", "status": "idea", "priority": "", "section": ["Movement"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "Ask Will how it worked in Uncharted 3", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "From Uncharted 3 multiplayer: hang off a ledge and drag a player above you down. Was under game modes, but it's a move."}]}, {"id": "F-002", "kind": "feature", "title": "Pistol, rocket launcher, sniper", "status": "done", "priority": "", "section": ["Weapons and pickups"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Pocket 9 pistol, Hammerhead rocket launcher, Longsight sniper. The Kestrel assault rifle was added since."}]}, {"id": "F-012", "kind": "feature", "title": "Pickups hover, spin and bob", "status": "done", "priority": "", "section": ["Weapons and pickups"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Was \"gun animation\" under Guns. Weapons on the ground already float, rotate and bob."}]}, {"id": "F-020", "kind": "feature", "title": "Melee: sledge, spear, knife, shield, chainsaw", "status": "planned", "priority": "", "section": ["Weapons and pickups"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "A nightstick is planned first."}]}, {"id": "F-017", "kind": "feature", "title": "Frag grenades", "status": "planned", "priority": "", "section": ["Weapons and pickups"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-006", "kind": "feature", "title": "Night theme, huts to camp in, sniper towers", "status": "in progress", "priority": "", "section": ["Maps", "Current map"], "progress": "60", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Night lighting, 2 huts and 2 towers are in. Needs a proper arena map."}]}, {"id": "F-018", "kind": "feature", "title": "Bigger map with lots of hiding spots", "status": "in progress", "priority": "", "section": ["Maps", "Current map"], "progress": "40", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Test map is now 4x the area with spread-out spawns."}, {"ul": ["Still to do: more hiding spots, weapon spots, small windows in buildings to shoot from."]}]}, {"id": "F-013", "kind": "feature", "title": "Toilet to hide in, doors that open and close", "status": "idea", "priority": "", "section": ["Maps", "Current map"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-014", "kind": "feature", "title": "Vents to crawl through to sneaky spots", "status": "idea", "priority": "", "section": ["Maps", "Current map"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-013", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "GoldenEye style, e.g. a vent into the toilet."}]}, {"id": "F-019", "kind": "feature", "title": "Destructible sniper tower", "status": "idea", "priority": "", "section": ["Maps", "Current map"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-006", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Shoot its legs to wear them down (visible damage). It falls with physics and does big damage to anyone on it or under it."}]}, {"id": "F-015", "kind": "feature", "title": "Alaska Fried Chicken level", "status": "idea", "priority": "", "section": ["Maps", "New maps"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-033", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Just the restaurant interior as a map. Could pair with a capture or waves mode."}]}, {"id": "F-007", "kind": "feature", "title": "Stars, rounder shapes, overgrown ruins", "status": "research", "priority": "", "section": ["Maps", "Visual style"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Sky with stars; buildings that aren't all boxes. Will loves the overgrown post-apocalyptic world of The Last of Us Part II."}]}, {"id": "F-010", "kind": "feature", "title": "Mode select: everyone gets their own mode", "status": "planned", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Joel .txt", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Joel's idea: simple selectable modes, so each of the boys has a corner for their own ideas. Deathmatch first, then the menu."}]}, {"id": "F-023", "kind": "feature", "title": "Quake Arena mode", "status": "idea", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-028", "kind": "feature", "title": "One in the Chamber", "status": "idea", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-044", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Black Ops 1 style: one bullet, a kill refills it, limited lives."}]}, {"id": "F-016", "kind": "feature", "title": "Slay the Minotaur", "status": "research", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-041", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Play it and work out what makes it fun."}]}, {"id": "F-021", "kind": "feature", "title": "Co-op survival waves + campaign", "status": "idea", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Left 4 Dead style."}]}, {"id": "F-036", "kind": "feature", "title": "Aliens vs Predator style mode", "status": "research", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "The 360 multiplayer was awesome. Work out what to take from it."}]}, {"id": "F-030", "kind": "feature", "title": "Monkey Ball style party mode", "status": "research", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Great fun on the 360 version. Note #31: the chance of success or failure is what makes it fun, and it's a good drunk game."}]}, {"id": "F-034", "kind": "feature", "title": "Crazy Taxi style mode", "status": "research", "priority": "", "section": ["Game modes"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-037", "kind": "feature", "title": "Killstreak rewards and awards", "status": "idea", "priority": "", "section": ["Killstreaks and progression"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Second note #7. Modern Warfare style killstreaks plus progression to keep players interested."}]}, {"id": "F-008", "kind": "feature", "title": "5-kill streak = become the werewolf", "status": "idea", "priority": "", "section": ["Killstreaks and progression"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "F-037", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Inspired by the film Dog Soldiers."}]}, {"id": "F-025", "kind": "feature", "title": "Create a class", "status": "idea", "priority": "", "section": ["Killstreaks and progression"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Choose your loadout before spawning."}]}, {"id": "F-024", "kind": "feature", "title": "Persistent leaderboards", "status": "idea", "priority": "", "section": ["Killstreaks and progression"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-005", "kind": "feature", "title": "The \"bumming guy\"", "status": "idea", "priority": "", "section": ["Silly extras"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Miss 10-15 shots with a projectile weapon and he's alerted and chases you."}, {"ul": ["If he catches you, you're out of play for 5 s.", "You can escape on a timer if you're skilled; he can be killed, but not easily."]}]}, {"id": "F-035", "kind": "feature", "title": "Voice acting from everyone we know", "status": "idea", "priority": "", "section": ["Silly extras"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-033", "kind": "feature", "title": "Bumbaclart chicken nuggets", "status": "idea", "priority": "", "section": ["Silly extras"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "Ask the boys what this one means", "related": "F-015", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "An item, a taunt, or part of the Alaska Fried Chicken level? **(Claude)**"}]}, {"id": "F-009", "kind": "feature", "title": "Online multiplayer + proximity chat", "status": "parked", "priority": "", "section": ["Big ideas for later"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Voice and text chat. A big job: splitscreen comes first."}]}, {"id": "F-011", "kind": "feature", "title": "Forge-style map editor", "status": "parked", "priority": "", "section": ["Big ideas for later"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Halo Forge: build our own maps and environments."}]}, {"id": "F-038", "kind": "feature", "title": "Open world", "status": "parked", "priority": "", "section": ["Big ideas for later"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Second note #13. \"Lol\"."}]}, {"id": "F-040", "kind": "feature", "title": "Nightfire", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "The base inspiration. We use only our own names, art and maps."}]}, {"id": "F-041", "kind": "feature", "title": "Slay the Minotaur", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "", "related": "F-016", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-042", "kind": "feature", "title": "Battlefield 1943", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-043", "kind": "feature", "title": "Vampire Slayer FPS", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-045", "kind": "feature", "title": "Uncharted 3 multiplayer", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "Ask Will which mode", "related": "F-026", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-044", "kind": "feature", "title": "Black Ops 1: One in the Chamber", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Games to play-reference.txt", "needs": "", "related": "F-028", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": []}, {"id": "F-029", "kind": "feature", "title": "PS3 / 360 era games", "status": "research", "priority": "", "section": ["Inspiration: games to study"], "progress": "", "file": "PLANS\\The Boys\\Ideas.md", "needs": "", "related": "", "added": "2026-10-22", "edited": "2026-10-22 12:58", "body": [{"p": "Black Ops 1, MW2, Singularity (powers). Shadowrun: magic abilities, one to play with the boys."}]}]};
+const $ = id => document.getElementById(id);
+const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const state = {kind:"all", status:"", need:false, hideDone:store.get("ns.hideDone")==="1", q:"", secQ:"",
+  section:store.get("ns.section")||"", sort:store.get("ns.sort")||"section"};
+if(!["section","recent","oldest"].includes(state.sort)) state.sort = "section";
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const inline = s => esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+const cssStatus = s => "var(--s-" + s.replace(/ /g,"-") + ")";
+const label = s => s.charAt(0).toUpperCase() + s.slice(1);
+const SEP = " > ";
+const pathOf = it => it.section.join(SEP);
+const fileHref = f => "../" + f.replace(/\\/g,"/").split("/").map(encodeURIComponent).join("/");
+
+// section tree, in the order sections first appear in FEATURES.md
+const root = {name:"", path:"", kids:[], items:[]};
+for(const it of DATA.items){
+  let node = root;
+  it.section.forEach((name, i) => {
+    const path = it.section.slice(0, i+1).join(SEP);
+    let k = node.kids.find(c => c.path === path);
+    if(!k){ k = {name, path, kids:[], items:[], depth:i+1}; node.kids.push(k); }
+    node = k;
+  });
+  node.items.push(it);
+}
+const allNodes = []; (function walk(n){ for(const k of n.kids){ allNodes.push(k); walk(k); } })(root);
+if(state.section && !allNodes.some(n => n.path === state.section)) state.section = "";
+
+function matches(it, opt){
+  opt = opt || {};
+  if(state.kind !== "all" && it.kind !== state.kind) return false;
+  if(state.kind === "fix" && (it.status === "done" || it.status === "pass")) return false;   // finished fixes no longer need fixing
+  if(!opt.ignoreStatus && state.status && it.status !== state.status) return false;
+  if(state.hideDone && (it.status === "done" || it.status === "pass")) return false;
+  if(state.need && !it.needs) return false;
+  if(!opt.ignoreSection && state.section){
+    const p = pathOf(it);
+    if(p !== state.section && !p.startsWith(state.section + SEP)) return false;
+  }
+  if(state.q && !hay(it).includes(state.q)) return false;
+  if(state.secQ && !hay(it).includes(state.secQ)) return false;
+  return true;
+}
+const hay = it => it._hay || (it._hay = [it.id,it.title,it.status,pathOf(it),it.file,it.needs,it.related,
+  it.body.map(b => b.p || b.ul.join(" ")).join(" ")].join(" ").toLowerCase());
+const subtreeItems = n => n.items.concat(...n.kids.map(subtreeItems));
+
+// folding sidebar: which sections show their subsections, and whether the list under "All sections" shows (both remembered)
+const openSecs = new Set((() => { try { return JSON.parse(store.get("ns.openSecs") || "[]"); } catch(e) { return []; } })());
+state.treeOpen = store.get("ns.treeOpen") !== "0";
+const saveFold = () => { store.set("ns.openSecs", JSON.stringify([...openSecs])); store.set("ns.treeOpen", state.treeOpen ? "1" : "0"); };
+// unfold the parents of a section so it can be seen in the sidebar
+const openTo = p => { if(!p) return; state.treeOpen = true; const parts = p.split(SEP); for(let i = 1; i < parts.length; i++) openSecs.add(parts.slice(0, i).join(SEP)); };
+openTo(state.section);
+
+function setSection(p){ state.section = p; store.set("ns.section", p); openTo(p); saveFold(); render(); window.scrollTo({top:0}); }
+
+function tree(){
+  const box = $("tree"); box.innerHTML = "";
+  const mk = (node, ul) => {
+    const li = document.createElement("li");
+    const row = document.createElement("div"); row.className = "trow";
+    const b = document.createElement("button");
+    const n = node === root ? DATA.items.filter(it => matches(it, {ignoreSection:true})).length
+                            : subtreeItems(node).filter(it => matches(it, {ignoreSection:true})).length;
+    // the sidebar filter hides sections with nothing that matches (the open section and "All sections" stay)
+    if(state.secQ && !n && node !== root && state.section !== node.path) return;
+    b.className = (node.depth === 1 ? "top" : "") + (state.section === node.path ? " on" : "") + (n ? "" : " dim");
+    b.innerHTML = '<span class="nm">' + esc(node === root ? "All sections" : node.name) + '</span><span class="n">' + n + "</span>";
+    b.onclick = () => setSection(node.path);
+    // a filter in the sidebar unfolds everything so the matches show
+    const isOpen = !!state.secQ || (node === root ? state.treeOpen : openSecs.has(node.path));
+    if(node.kids.length){
+      const t = document.createElement("button");
+      t.className = "tog" + (isOpen ? " open" : "");
+      t.innerHTML = "<span>&#9654;</span>";
+      t.title = (isOpen ? "Hide " : "Show ") + (node === root ? "sections" : "subsections");
+      t.setAttribute("aria-expanded", isOpen);
+      t.onclick = () => {
+        if(node === root) state.treeOpen = !isOpen;
+        else if(isOpen) openSecs.delete(node.path); else openSecs.add(node.path);
+        saveFold(); tree();
+      };
+      row.append(b, t);
+    } else { row.appendChild(b); row.insertAdjacentHTML("beforeend", '<span class="tog"></span>'); }
+    li.appendChild(row);
+    if(node.kids.length && node !== root && isOpen){
+      const sub = document.createElement("ul");
+      for(const k of node.kids) mk(k, sub);
+      li.appendChild(sub);
+    }
+    ul.appendChild(li);
+  };
+  mk(root, box);
+  if(state.treeOpen || state.secQ) for(const k of root.kids) mk(k, box);
+}
+
+function chips(){
+  const box = $("statusChips"); box.innerHTML = "";
+  const all = document.createElement("button");
+  all.className = "chip" + (state.status ? "" : " on");
+  all.innerHTML = "Any status";
+  all.onclick = () => { state.status = ""; render(); };
+  box.appendChild(all);
+  for(const s of DATA.statuses){
+    const n = DATA.items.filter(it => it.status === s && matches(it, {ignoreStatus:true})).length;
+    if(!n && state.status !== s) continue;
+    const b = document.createElement("button");
+    b.className = "chip" + (state.status === s ? " on" : "");
+    b.innerHTML = '<span class="dot" style="background:' + cssStatus(s) + '"></span>' + label(s) + '<span class="n">' + n + '</span>';
+    b.onclick = () => { state.status = state.status === s ? "" : s; render(); };
+    box.appendChild(b);
+  }
+}
+
+function itemEl(it){
+  const d = document.createElement("details");
+  d.className = "item"; d.id = it.id;
+  let badges = "";
+  if(it.progress) badges += '<span class="pct" title="Completion">' + esc(it.progress) + '%<i><b style="width:' + Math.min(100, +it.progress || 0) + '%"></b></i></span>';
+  if(it.kind === "fix" && it.status !== "done" && it.status !== "pass") badges += '<span class="badge fix">fix</span>';
+  badges += '<span class="badge" style="color:' + cssStatus(it.status) + '">' + esc(it.status) + '</span>';
+  if(it.priority) badges += '<span class="badge pri ' + esc(it.priority) + '">' + esc(it.priority) + '</span>';
+  if(it.needs) badges += '<span class="badge needs">waiting on you</span>';
+  if(state.sort !== "section") badges += '<span class="when" title="Last changed">' + esc(it.edited ? (it.edited.split(" ")[1] ? it.edited.split(" ")[1] + " GMT" : it.edited) : "no date") + "</span>";
+  let body = "";
+  for(const b of it.body){
+    if(b.p) body += "<p>" + inline(b.p) + "</p>";
+    else body += "<ul>" + b.ul.map(x => "<li>" + inline(x) + "</li>").join("") + "</ul>";
+  }
+  let meta = "";
+  if(it.needs) meta += '<dt>Waiting on</dt><dd class="need">' + inline(it.needs) + "</dd>";
+  if(it.file) meta += '<dt>File</dt><dd><a href="' + fileHref(it.file) + '" target="_blank">' + esc(it.file) + "</a></dd>";
+  if(it.related) meta += "<dt>Related</dt><dd>" + inline(it.related) + "</dd>";
+  meta += "<dt>Section</dt><dd>" + esc(it.section.join(" › ")) + "</dd>";
+  if(it.added) meta += "<dt>Added</dt><dd>" + esc(it.added) + "</dd>";
+  if(it.edited) meta += "<dt>Last changed</dt><dd>" + esc(it.edited) + (it.edited.includes(" ") ? " GMT" : "") + "</dd>";
+  d.innerHTML = '<summary><span class="caret">&#9654;</span><span class="id">' + esc(it.id) +
+    '</span><span class="title">' + esc(it.title) + '</span><span class="badges">' + badges +
+    '</span></summary><div class="detail">' + body + '<dl class="meta">' + meta + "</dl></div>";
+  return d;
+}
+
+function render(){
+  chips(); tree();
+  document.querySelectorAll("[data-kind]").forEach(b => b.classList.toggle("on", b.dataset.kind === state.kind));
+  $("needBtn").classList.toggle("on", state.need);
+  $("hideDone").classList.toggle("on", state.hideDone);
+  $("needN").textContent = " " + DATA.items.filter(it => it.needs && matches(it, {ignoreSection:true})).length;
+  const list = $("list");
+  const open = new Set([...list.querySelectorAll("details[open]")].map(d => d.id));
+  list.innerHTML = "";
+  if(state.section){
+    const c = document.createElement("div"); c.className = "crumb";
+    const parts = state.section.split(SEP);
+    c.innerHTML = '<a data-p="">All sections</a>' + parts.map((p, i) =>
+      ' › <a data-p="' + esc(parts.slice(0, i+1).join(SEP)) + '">' + esc(p) + "</a>").join("");
+    c.querySelectorAll("a").forEach(a => a.onclick = () => setSection(a.dataset.p));
+    list.appendChild(c);
+  }
+  let shown = 0;
+  const heading = (node, tag, text, n) => {
+    const h = document.createElement(tag);
+    h.innerHTML = esc(text) + '<span class="c">' + n + "</span>";
+    h.title = "Show only this section";
+    h.onclick = () => setSection(node.path);
+    list.appendChild(h);
+  };
+  const walk = (node, top) => {
+    const items = node.items.filter(it => matches(it));
+    const sub = subtreeItems(node).filter(it => matches(it));
+    if(!sub.length) return;
+    if(node.depth === 1) heading(node, "h2", node.name, sub.length);
+    else if(items.length) heading(node, "h3", node.path.split(SEP).slice(top.depth).join(" › "), items.length);
+    // features first, then fixes, keeping file order
+    for(const it of items.filter(i => i.kind === "feature").concat(items.filter(i => i.kind === "fix"))){
+      const el = itemEl(it);
+      if(open.has(it.id)) el.open = true;
+      list.appendChild(el); shown++;
+    }
+    for(const k of node.kids) walk(k, node.depth === 1 ? node : top);
+  };
+  if(state.sort === "section") for(const k of root.kids) walk(k, k);
+  else {
+    // one flat list grouped by day; entries with an exact time sort above date-only ones of the same day
+    const order = DATA.items.map((it, i) => [it, i]).filter(([it]) => matches(it));
+    const dir = state.sort === "recent" ? -1 : 1;
+    order.sort((a, b) => {
+      if(!a[0].edited !== !b[0].edited) return a[0].edited ? -1 : 1;   // no date always last
+      const c = a[0].edited < b[0].edited ? -1 : a[0].edited > b[0].edited ? 1 : 0;
+      return c ? c * dir : (a[1] - b[1]) * dir;
+    });
+    let day = null;
+    for(const [it] of order){
+      const d = it.edited ? it.edited.slice(0, 10) : "No date";
+      if(d !== day){
+        day = d;
+        const h = document.createElement("h2");
+        h.style.cursor = "default";
+        h.innerHTML = esc(d) + '<span class="c">' + order.filter(([x]) => (x.edited ? x.edited.slice(0, 10) : "No date") === d).length + "</span>";
+        list.appendChild(h);
+      }
+      const el = itemEl(it);
+      el.querySelector(".title").insertAdjacentHTML("beforeend", ' <span class="when">· ' + esc(it.section.join(" › ")) + "</span>");
+      if(open.has(it.id)) el.open = true;
+      list.appendChild(el); shown++;
+    }
+  }
+  if(!shown) list.insertAdjacentHTML("beforeend", '<div class="empty">Nothing matches those filters.</div>');
+  const total = DATA.items.length, fin = DATA.items.filter(i => i.status === "done" || i.status === "pass").length;
+  $("foot").textContent = total + " entries · " + fin + " passed or done · source: FEATURES.md" +
+    (DATA.updated ? " · updated " + DATA.updated : "") + " · regenerate with build_feature_list.py";
+}
+
+document.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { state.kind = b.dataset.kind; render(); });
+$("needBtn").onclick = () => { state.need = !state.need; render(); };
+$("hideDone").onclick = () => { state.hideDone = !state.hideDone; store.set("ns.hideDone", state.hideDone ? "1" : "0"); render(); };
+$("q").oninput = e => { state.q = e.target.value.trim().toLowerCase(); render(); };
+$("secQ").oninput = e => { state.secQ = e.target.value.trim().toLowerCase(); render(); };
+$("sort").value = state.sort;
+$("sort").onchange = e => { state.sort = e.target.value; store.set("ns.sort", state.sort); render(); window.scrollTo({top:0}); };
+let allOpen = false;
+$("expand").onclick = () => {
+  allOpen = !allOpen;
+  document.querySelectorAll("details.item").forEach(d => d.open = allOpen);
+  $("expand").textContent = allOpen ? "Collapse all" : "Expand all";
+};
+const setHH = () => document.documentElement.style.setProperty("--hh", document.querySelector("header").offsetHeight + 8 + "px");
+window.addEventListener("resize", setHH);
+// narrow screens: the section tree folds away; wide screens: always open (its summary is hidden there)
+const narrow = window.matchMedia("(max-width:800px)");
+const fitNav = () => { $("navBox").open = !narrow.matches; setHH(); };
+narrow.addEventListener("change", fitNav);
+fitNav();
+function openHash(){
+  const id = decodeURIComponent(location.hash.slice(1));
+  if(!id) return;
+  const it = DATA.items.find(i => i.id === id);
+  if(it && !matches(it)){ state.section = ""; state.status = ""; state.kind = "all"; state.need = false; state.hideDone = false; state.q = ""; $("q").value = ""; state.secQ = ""; $("secQ").value = ""; render(); }
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.open = true; el.classList.add("flash");
+  el.scrollIntoView({block:"center"});
+  setTimeout(() => el.classList.remove("flash"), 1500);
+}
+window.addEventListener("hashchange", openHash);
+render(); setHH(); openHash();
+</script>
+</body>
+</html>
